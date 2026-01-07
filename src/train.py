@@ -238,8 +238,7 @@ def create_scheduler(
             mode="max",  # Maximize F1 score
             factor=cfg.scheduler.factor,
             patience=cfg.scheduler.patience,
-            min_lr=cfg.scheduler.min_lr,
-            verbose=True
+            min_lr=cfg.scheduler.min_lr
         )
     elif cfg.scheduler.name.lower() == "cosine":
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
