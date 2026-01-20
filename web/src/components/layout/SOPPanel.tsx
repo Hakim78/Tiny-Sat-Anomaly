@@ -3,7 +3,7 @@
 // =============================================================================
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useStore } from '@/store/useStore';
 import {
   Shield,
@@ -66,7 +66,7 @@ const standardProcedures: SOP[] = [
       { id: 4, title: 'Initiate mitigation', description: 'Adjust thermal control if necessary', completed: false, required: false },
     ],
     estimatedTime: '10-15 min',
-    lastExecuted: '2025-12-18 14:32 UTC',
+    lastExecuted: null, // Dynamically calculated
   },
   {
     id: 'sop-c03',
@@ -80,7 +80,7 @@ const standardProcedures: SOP[] = [
       { id: 3, title: 'Consider interference', description: 'Check for RF environment issues', completed: false, required: false },
     ],
     estimatedTime: '5-10 min',
-    lastExecuted: '2025-12-20 08:15 UTC',
+    lastExecuted: null, // Dynamically calculated
   },
 ];
 
@@ -91,6 +91,22 @@ export function SOPPanel() {
 
   const [activeSOP, setActiveSOP] = useState<string | null>(null);
   const [completedSteps, setCompletedSteps] = useState<Record<string, number[]>>({});
+  const [sessionStart] = useState(() => new Date());
+  const [sessionDuration, setSessionDuration] = useState('0h 0m');
+
+  // Update session duration every minute
+  useEffect(() => {
+    const updateDuration = () => {
+      const now = new Date();
+      const diff = Math.floor((now.getTime() - sessionStart.getTime()) / 1000);
+      const hours = Math.floor(diff / 3600);
+      const minutes = Math.floor((diff % 3600) / 60);
+      setSessionDuration(`${hours}h ${minutes}m`);
+    };
+    updateDuration();
+    const interval = setInterval(updateDuration, 60000);
+    return () => clearInterval(interval);
+  }, [sessionStart]);
 
   // Determine which SOP to suggest based on anomaly state
   const suggestedSOP = isAnomaly ? standardProcedures[0] : null;
@@ -288,15 +304,17 @@ export function SOPPanel() {
         <div className="grid grid-cols-3 gap-4 text-[10px]">
           <div>
             <div className="text-[var(--signal-dim)]">Operator ID</div>
-            <div className="text-[var(--signal-white)] font-mono">MCO-L2-WILLIAMS</div>
+            <div className="text-[var(--signal-white)] font-mono">MCO-L2-OPERATOR</div>
           </div>
           <div>
             <div className="text-[var(--signal-dim)]">Shift Start</div>
-            <div className="text-[var(--signal-white)] font-mono">2025-01-19 06:00 UTC</div>
+            <div className="text-[var(--signal-white)] font-mono">
+              {sessionStart.toISOString().replace('T', ' ').slice(0, 19)} UTC
+            </div>
           </div>
           <div>
             <div className="text-[var(--signal-dim)]">Session Duration</div>
-            <div className="text-[var(--signal-white)] font-mono">4h 23m</div>
+            <div className="text-[var(--signal-white)] font-mono">{sessionDuration}</div>
           </div>
         </div>
       </div>

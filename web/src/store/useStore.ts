@@ -311,11 +311,19 @@ export const useStore = create<SimulationState>()(
           id: generateId(),
           timestamp: new Date(),
           type: 'WARN' as const,
-          message: 'SOLAR FLARE INCOMING - Expect signal degradation!',
+          message: 'SOLAR FLARE INCOMING [Class X2.1] - Severe signal degradation expected. Anomaly detection accuracy may be impacted.',
         };
+        // Immediately increase anomaly probability to make effect visible
+        const newProbability = Math.min(state.anomalyProbability + 0.35, 0.92);
         return {
           isSabotageActive: true,
-          sabotageCountdown: 15, // 15 ticks of chaos
+          sabotageCountdown: 25, // 25 ticks of chaos for longer visible effect
+          anomalyProbability: newProbability,
+          isAnomaly: newProbability > state.anomalyThreshold,
+          probabilityHistory: [
+            ...state.probabilityHistory.slice(-HISTORY_SIZE + 1),
+            newProbability * 100,
+          ],
           logs: [sabotageLog, ...state.logs].slice(0, 50),
         };
       }),

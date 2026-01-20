@@ -5,6 +5,7 @@
 
 import { useStore } from '@/store/useStore';
 import { useInference } from '@/hooks/useInference';
+import { useState, useCallback } from 'react';
 import {
   Settings,
   Package,
@@ -19,6 +20,7 @@ import {
   XCircle,
   Loader2,
   AlertCircle,
+  Sparkles,
 } from 'lucide-react';
 
 interface ControlPanelProps {
@@ -38,14 +40,47 @@ export function ControlPanel({ className = '' }: ControlPanelProps) {
   const setAnomalyThreshold = useStore((s) => s.setAnomalyThreshold);
   const triggerSabotage = useStore((s) => s.triggerSabotage);
   const isSabotageActive = useStore((s) => s.isSabotageActive);
+  const sabotageCountdown = useStore((s) => s.sabotageCountdown);
   const currentIndex = useStore((s) => s.currentIndex);
   const anomalyCount = useStore((s) => s.anomalyCount);
   const telemetryData = useStore((s) => s.telemetryData);
+
+  const addLog = useStore((s) => s.addLog);
 
   const totalSamples = telemetryData?.metadata.samples || 0;
   const progress = totalSamples > 0 ? (currentIndex / totalSamples) * 100 : 0;
 
   const canStart = isModelLoaded && isDataLoaded && !isLoading;
+
+  const [isDemoRunning, setIsDemoRunning] = useState(false);
+
+  // Quick Demo: Starts simulation at 4x, triggers solar flare after 3 seconds
+  const runQuickDemo = useCallback(() => {
+    if (!canStart || isPlaying) return;
+
+    setIsDemoRunning(true);
+    addLog('INFO', 'Quick Demo initiated - showcasing anomaly detection capabilities');
+
+    // Reset and configure
+    reset();
+    setPlaybackSpeed(4);
+
+    // Start simulation after a brief delay
+    setTimeout(() => {
+      togglePlayback();
+
+      // Trigger solar flare after 3 seconds
+      setTimeout(() => {
+        triggerSabotage();
+        addLog('WARN', 'Demo: Solar flare injection to demonstrate model response');
+      }, 3000);
+
+      // End demo mode after 15 seconds
+      setTimeout(() => {
+        setIsDemoRunning(false);
+      }, 15000);
+    }, 500);
+  }, [canStart, isPlaying, reset, setPlaybackSpeed, togglePlayback, triggerSabotage, addLog]);
 
   return (
     <div className={`space-y-4 ${className}`}>
@@ -135,6 +170,20 @@ export function ControlPanel({ className = '' }: ControlPanelProps) {
         </button>
       </div>
 
+      {/* Quick Demo Button */}
+      <button
+        onClick={runQuickDemo}
+        disabled={!canStart || isPlaying}
+        className={`w-full py-2.5 rounded-lg font-semibold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${
+          canStart && !isPlaying
+            ? 'bg-gradient-to-r from-purple-600/80 to-pink-600/80 text-white hover:from-purple-500 hover:to-pink-500 border border-purple-500/30'
+            : 'bg-slate-800 text-slate-600 cursor-not-allowed border border-slate-700'
+        }`}
+      >
+        <Sparkles className={`w-3.5 h-3.5 ${isDemoRunning ? 'animate-spin' : ''}`} />
+        {isDemoRunning ? 'Demo Running...' : 'Quick Demo'}
+      </button>
+
       {/* Speed Control */}
       <div className="rounded-lg bg-slate-900/50 border border-slate-800 p-3 space-y-2">
         <div className="flex items-center gap-2 text-[10px] text-slate-500 uppercase tracking-wider">
@@ -180,11 +229,22 @@ export function ControlPanel({ className = '' }: ControlPanelProps) {
         />
       </div>
 
-      {/* Chaos Engineering */}
-      <div className="rounded-lg bg-slate-900/50 border border-slate-800 p-3 space-y-2">
-        <div className="flex items-center gap-2 text-[10px] text-slate-500 uppercase tracking-wider">
-          <Flame className="w-3 h-3" />
-          Chaos Engineering
+      {/* Chaos Engineering / Solar Flare Injection */}
+      <div className={`rounded-lg p-3 space-y-2 transition-all ${
+        isSabotageActive
+          ? 'bg-gradient-to-br from-orange-900/50 to-red-900/50 border-2 border-orange-500/50 animate-pulse'
+          : 'bg-slate-900/50 border border-slate-800'
+      }`}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-[10px] text-slate-500 uppercase tracking-wider">
+            <Flame className={`w-3 h-3 ${isSabotageActive ? 'text-orange-400' : ''}`} />
+            Chaos Engineering
+          </div>
+          {isSabotageActive && (
+            <span className="text-[10px] font-mono text-orange-400">
+              T-{sabotageCountdown}
+            </span>
+          )}
         </div>
         <button
           onClick={triggerSabotage}
@@ -196,14 +256,26 @@ export function ControlPanel({ className = '' }: ControlPanelProps) {
           }`}
         >
           <Flame className="w-3.5 h-3.5" />
-          Trigger Solar Flare
+          {isSabotageActive ? 'Flare Active' : 'Trigger Solar Flare'}
         </button>
         {isSabotageActive && (
-          <div className="text-[10px] text-orange-400 animate-pulse text-center flex items-center justify-center gap-1">
-            <Flame className="w-3 h-3" />
-            Solar flare active!
+          <div className="space-y-2">
+            <div className="text-[10px] text-orange-400 text-center flex items-center justify-center gap-1">
+              <AlertCircle className="w-3 h-3" />
+              X2.1 CLASS SOLAR FLARE - Signal Degradation
+            </div>
+            {/* Solar flare intensity bar */}
+            <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-orange-500 to-red-500 transition-all duration-300"
+                style={{ width: `${(sabotageCountdown / 25) * 100}%` }}
+              />
+            </div>
           </div>
         )}
+        <p className="text-[9px] text-slate-600 text-center">
+          Injects noise to test model robustness
+        </p>
       </div>
 
       {/* Mission Stats */}

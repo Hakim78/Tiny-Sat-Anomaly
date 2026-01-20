@@ -3,6 +3,7 @@
 // =============================================================================
 'use client';
 
+import { useMemo } from 'react';
 import {
   Brain,
   Database,
@@ -20,7 +21,16 @@ interface ModelCardProps {
   compact?: boolean;
 }
 
+// Calculate a consistent "last retrain" date (42 days before current date)
+function getLastRetrainDate(): string {
+  const now = new Date();
+  const retrainDate = new Date(now.getTime() - 42 * 24 * 60 * 60 * 1000);
+  return retrainDate.toISOString().split('T')[0];
+}
+
 export function ModelCard({ compact = false }: ModelCardProps) {
+  const lastRetrain = useMemo(() => getLastRetrainDate(), []);
+
   // Model metadata - would come from config in production
   const modelInfo = {
     name: 'LSTM-AD',
@@ -31,7 +41,7 @@ export function ModelCard({ compact = false }: ModelCardProps) {
     outputShape: '[1, 1]',
     parameters: '~125K',
     latency: '<15ms',
-    lastRetrain: '2025-12-08',
+    lastRetrain,
     trainingData: {
       source: 'NASA SMAP Telemetry Dataset',
       samples: '18 months historical data',
