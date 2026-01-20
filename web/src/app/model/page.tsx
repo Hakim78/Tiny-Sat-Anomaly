@@ -31,7 +31,7 @@ export default function ModelPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Full Model Card - 2 columns */}
           <div className="lg:col-span-2">
-            <ModelCard variant="full" />
+            <ModelCard />
           </div>
 
           {/* Sidebar - Model Status & Info */}
