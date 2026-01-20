@@ -534,3 +534,13 @@ body {
 .border-glow-red {
   box-shadow: 0 0 20px rgba(255, 59, 48, 0.3);
 }
+
+/* Hide scrollbar utility */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

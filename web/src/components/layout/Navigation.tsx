@@ -93,8 +93,8 @@ export function Navigation() {
             </div>
           </div>
 
-          {/* Status Indicators */}
-          <div className="flex items-center gap-4">
+          {/* Status Indicators - Hidden on mobile */}
+          <div className="hidden md:flex items-center gap-4">
             {/* System Status */}
             <div className="flex items-center gap-2 px-3 py-1 rounded bg-black/30 border border-white/5">
               <Activity className={`w-3 h-3 ${isPlaying ? 'text-[var(--nominal-green)] animate-pulse' : 'text-[var(--signal-dim)]'}`} />
@@ -117,47 +117,59 @@ export function Navigation() {
             </div>
 
             {/* Operator ID */}
-            <div className="flex items-center gap-2 px-3 py-1 rounded bg-black/30 border border-white/5">
+            <div className="hidden lg:flex items-center gap-2 px-3 py-1 rounded bg-black/30 border border-white/5">
               <div className="w-2 h-2 rounded-full bg-[var(--nominal-green)]" />
               <span className="text-[9px] text-[var(--signal-dim)]">Operator:</span>
               <span className="text-[9px] text-[var(--signal-white)] font-mono">MCO-L2</span>
             </div>
 
             {/* UTC Time */}
-            <div className="text-[10px] font-mono text-[var(--accent-cyan)]">
+            <div className="hidden lg:block text-[10px] font-mono text-[var(--accent-cyan)]">
               {new Date().toISOString().replace('T', ' ').slice(0, 19)} UTC
+            </div>
+          </div>
+
+          {/* Mobile: Anomaly badge only */}
+          <div className="flex md:hidden items-center gap-2">
+            <div className={`flex items-center gap-1 px-2 py-1 rounded border text-[8px] ${
+              anomalyCount > 0
+                ? 'bg-[var(--alert-red)]/10 border-[var(--alert-red)]/30 text-[var(--alert-red)]'
+                : 'bg-black/30 border-white/5 text-[var(--signal-dim)]'
+            }`}>
+              <span className="font-bold">{anomalyCount}</span>
+              <span>ANM</span>
             </div>
           </div>
         </div>
 
-        {/* Navigation Links */}
-        <div className="flex items-center gap-1 px-4 py-1">
+        {/* Navigation Links - Scrollable on mobile */}
+        <div className="flex items-center gap-1 px-2 md:px-4 py-1 overflow-x-auto scrollbar-hide">
           {navItems.map((item) => {
             const isActive = pathname === item.href;
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`group relative flex items-center gap-2 px-4 py-2 rounded transition-all ${
+                className={`group relative flex items-center gap-1 md:gap-2 px-2 md:px-4 py-2 rounded transition-all flex-shrink-0 ${
                   isActive
                     ? 'bg-[var(--accent-cyan)]/10 border border-[var(--accent-cyan)]/30 text-[var(--accent-cyan)]'
                     : 'text-[var(--signal-dim)] hover:text-[var(--signal-white)] hover:bg-white/5'
                 }`}
               >
                 {item.icon}
-                <span className="text-[10px] font-semibold uppercase tracking-wider">
+                <span className="text-[9px] md:text-[10px] font-semibold uppercase tracking-wider">
                   {item.shortLabel}
                 </span>
 
-                {/* Tooltip */}
-                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-3 py-2 bg-[var(--panel-dark)] border border-white/10 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
+                {/* Tooltip - Hidden on mobile */}
+                <div className="hidden md:block absolute top-full left-1/2 -translate-x-1/2 mt-2 px-3 py-2 bg-[var(--panel-dark)] border border-white/10 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
                   <div className="text-[10px] font-semibold text-[var(--signal-white)]">{item.label}</div>
                   <div className="text-[8px] text-[var(--signal-dim)]">{item.description}</div>
                 </div>
 
                 {/* Active indicator */}
                 {isActive && (
-                  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-[var(--accent-cyan)]" />
+                  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-6 md:w-8 h-0.5 bg-[var(--accent-cyan)]" />
                 )}
               </Link>
             );

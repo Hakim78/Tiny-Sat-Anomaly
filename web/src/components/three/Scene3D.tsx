@@ -6,7 +6,7 @@
 
 import { useRef, useMemo, Suspense } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { Stars, OrbitControls, useGLTF, Float, useTexture } from '@react-three/drei';
+import { Stars, OrbitControls, useGLTF, Float, useTexture, Line, AdaptiveDpr, AdaptiveEvents } from '@react-three/drei';
 import * as THREE from 'three';
 import { useStore } from '@/store/useStore';
 import { geoTo3D } from '@/lib/satellite-api';
@@ -69,7 +69,7 @@ function EarthWithTexture() {
     <group>
       {/* Main Earth with texture */}
       <mesh ref={earthRef}>
-        <sphereGeometry args={[EARTH_RADIUS, 128, 128]} />
+        <sphereGeometry args={[EARTH_RADIUS, 64, 64]} />
         <meshStandardMaterial
           map={dayMap}
           roughness={0.8}
@@ -79,7 +79,7 @@ function EarthWithTexture() {
 
       {/* Semi-transparent clouds layer */}
       <mesh rotation={[0, 0.5, 0]}>
-        <sphereGeometry args={[EARTH_RADIUS + 0.015, 64, 64]} />
+        <sphereGeometry args={[EARTH_RADIUS + 0.015, 32, 32]} />
         <meshStandardMaterial
           color="#ffffff"
           transparent
@@ -90,7 +90,7 @@ function EarthWithTexture() {
 
       {/* Atmosphere glow */}
       <mesh scale={1.12}>
-        <sphereGeometry args={[EARTH_RADIUS, 64, 64]} />
+        <sphereGeometry args={[EARTH_RADIUS, 32, 32]} />
         <primitive object={atmosphereMaterial} attach="material" />
       </mesh>
     </group>
@@ -142,19 +142,19 @@ function EarthFallback() {
     <group>
       {/* Procedural Earth - Ocean */}
       <mesh ref={earthRef}>
-        <sphereGeometry args={[EARTH_RADIUS, 64, 64]} />
+        <sphereGeometry args={[EARTH_RADIUS, 32, 32]} />
         <meshStandardMaterial color="#1a4d7c" roughness={0.7} metalness={0.1} />
       </mesh>
 
       {/* Procedural continents overlay */}
       <mesh rotation={[0, 1, 0]}>
-        <sphereGeometry args={[EARTH_RADIUS + 0.005, 64, 64]} />
+        <sphereGeometry args={[EARTH_RADIUS + 0.005, 32, 32]} />
         <meshStandardMaterial color="#2d5a3f" transparent opacity={0.5} roughness={0.9} />
       </mesh>
 
       {/* Atmosphere glow */}
       <mesh scale={1.12}>
-        <sphereGeometry args={[EARTH_RADIUS, 64, 64]} />
+        <sphereGeometry args={[EARTH_RADIUS, 32, 32]} />
         <primitive object={atmosphereMaterial} attach="material" />
       </mesh>
     </group>
@@ -177,7 +177,6 @@ function Earth() {
 // =============================================================================
 function Satellite() {
   const satelliteRef = useRef<THREE.Group>(null);
-  const trailRef = useRef<THREE.Line>(null);
   const isAnomaly = useStore((s) => s.isAnomaly);
   const satellitePosition = useStore((s) => s.satellitePosition);
   const orbitTrail = useStore((s) => s.orbitTrail);
@@ -216,18 +215,17 @@ function Satellite() {
     );
   }, [position3D]);
 
-  // Create orbit trail geometry from trail points
-  const trailGeometry = useMemo(() => {
+  // Create orbit trail points
+  const trailPoints = useMemo(() => {
     if (orbitTrail.length < 2) return null;
 
-    const points: THREE.Vector3[] = [];
+    const points: [number, number, number][] = [];
     for (const [lon, lat] of orbitTrail) {
       const pos = geoTo3D(lat, lon, satellitePosition.alt, EARTH_RADIUS);
-      points.push(new THREE.Vector3(pos.x, pos.y, pos.z));
+      points.push([pos.x, pos.y, pos.z]);
     }
 
-    const geometry = new THREE.BufferGeometry().setFromPoints(points);
-    return geometry;
+    return points;
   }, [orbitTrail, satellitePosition.alt]);
 
   // Status color
@@ -247,16 +245,14 @@ function Satellite() {
       </mesh>
 
       {/* Orbit trail */}
-      {trailGeometry && (
-        <line ref={trailRef}>
-          <primitive object={trailGeometry} attach="geometry" />
-          <lineBasicMaterial
-            color={statusColor}
-            transparent
-            opacity={0.6}
-            linewidth={2}
-          />
-        </line>
+      {trailPoints && trailPoints.length >= 2 && (
+        <Line
+          points={trailPoints}
+          color={statusColor}
+          lineWidth={2}
+          transparent
+          opacity={0.6}
+        />
       )}
 
       {/* Satellite position */}
@@ -427,13 +423,17 @@ export function Scene3D({ className = '' }: Scene3DProps) {
       <Canvas
         camera={{ position: [0, 2, 6.5], fov: 50 }}
         gl={{
-          antialias: true,
+          antialias: false,
           alpha: true,
-          powerPreference: 'high-performance',
+          powerPreference: 'low-power',
         }}
         style={{ background: 'transparent', width: '100%', height: '100%' }}
-        dpr={[1, 2]}
+        dpr={[0.5, 1]} // Réduit la résolution pour performance
+        performance={{ min: 0.5 }} // Réduit qualité si nécessaire
       >
+        {/* Adaptive performance */}
+        <AdaptiveDpr pixelated />
+        <AdaptiveEvents />
         {/* Professional lighting setup for realistic Earth */}
         <ambientLight intensity={0.4} color="#ffffff" />
 
@@ -465,10 +465,10 @@ export function Scene3D({ className = '' }: Scene3DProps) {
 
         {/* Starfield background */}
         <Stars
-          radius={100}
-          depth={50}
-          count={7000}
-          factor={4}
+          radius={80}
+          depth={30}
+          count={1500}
+          factor={3}
           saturation={0}
           fade
           speed={0.5}

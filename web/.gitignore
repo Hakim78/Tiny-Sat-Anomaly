@@ -40,3 +40,5 @@ Thumbs.db
 
 # ONNX WASM files (generated at build time)
 public/*.wasm
+
+.vercel
