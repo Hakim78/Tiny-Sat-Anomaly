@@ -1,6 +1,6 @@
 # Tiny-Sat-Anomaly
 
-Production-grade satellite telemetry anomaly detection using LSTM neural networks.
+Production-grade satellite telemetry anomaly detection using LSTM neural networks with **real-time web visualization**.
 
 ## Overview
 
@@ -13,6 +13,9 @@ This project implements an LSTM-based anomaly detection system for satellite tel
 - **WandB Integration**: Experiment tracking and visualization
 - **Reproducibility**: Full seed control for deterministic training
 - **Production-Ready**: Type hints, logging, checkpointing, and error handling
+- **Web Dashboard**: Next.js app with client-side ONNX inference (WebAssembly)
+- **Streamlit Dashboard**: Interactive Python-based visualization
+- **3D Globe Visualization**: Real-time satellite orbit tracking
 
 ## Project Structure
 
@@ -38,6 +41,20 @@ tiny-sat-anomaly/
 │   ├── train.py              # Training pipeline
 │   ├── evaluate.py           # Evaluation & visualization
 │   └── utils.py              # Utility functions
+├── web/                       # Next.js Web Application
+│   ├── public/
+│   │   ├── model.onnx        # ONNX model for browser inference
+│   │   └── telemetry_data.json
+│   ├── src/
+│   │   ├── app/              # Next.js App Router
+│   │   ├── components/       # React components (Globe, Oscilloscope, etc.)
+│   │   ├── hooks/            # Custom hooks (useInference)
+│   │   ├── lib/              # ONNX session management
+│   │   └── store/            # Zustand state management
+│   ├── prepare_assets.py     # PyTorch → ONNX conversion script
+│   └── package.json
+├── streamlit_app.py          # Streamlit dashboard
+├── best_model.pth            # Trained model checkpoint
 ├── requirements.txt
 └── README.md
 ```
@@ -111,6 +128,55 @@ This generates:
 - Confusion matrix plot
 - Anomaly timeline visualization
 - ROC and Precision-Recall curves
+
+### Streamlit Dashboard
+
+Launch the interactive Python dashboard:
+
+```bash
+streamlit run streamlit_app.py
+```
+
+Features:
+- Real-time telemetry visualization
+- Anomaly detection with confidence scores
+- Interactive controls (play/pause, speed, sabotage simulation)
+- 3D satellite orbit visualization
+
+### Web Dashboard (Next.js + ONNX)
+
+The web application runs AI inference directly in the browser using ONNX Runtime WebAssembly.
+
+#### 1. Convert model to ONNX format
+
+```bash
+cd web
+python prepare_assets.py
+```
+
+This creates:
+- `public/model.onnx` - Model for browser inference
+- `public/telemetry_data.json` - Telemetry data
+
+> **Note**: If you encounter `onnxscript` errors with PyTorch 2.x, use Kaggle/Colab to run the conversion (see troubleshooting section).
+
+#### 2. Install and run
+
+```bash
+cd web
+npm install
+npm run dev
+```
+
+Open http://localhost:3000 to view the Space Command Center dashboard.
+
+#### Web Dashboard Features
+
+- **3D Globe**: Real-time satellite position with orbit path
+- **Oscilloscope**: Live telemetry waveforms (8 channels)
+- **HUD Status**: Anomaly probability with color-coded alerts
+- **Control Panel**: Playback controls, speed adjustment, sabotage simulation
+- **Mission Log**: Real-time event logging with timestamps
 
 ### Configuration Override Examples
 
@@ -235,9 +301,65 @@ On synthetic demo data (actual results may vary):
 
 MIT License
 
+## Troubleshooting
+
+### PyTorch 2.x ONNX Export Error
+
+If you encounter this error when running `prepare_assets.py`:
+
+```
+ModuleNotFoundError: No module named 'onnxscript'
+```
+
+**Cause**: PyTorch 2.x requires `onnxscript` for ONNX export, which has heavy dependencies.
+
+**Solutions**:
+
+1. **Use Kaggle/Google Colab** (recommended):
+   - Upload `best_model.pth` to Kaggle
+   - Run the conversion notebook (see `web/kaggle_convert.py`)
+   - Download the generated `model.onnx`
+
+2. **Install onnxscript** (requires ~500MB):
+   ```bash
+   pip install onnxscript onnx
+   ```
+
+3. **Downgrade PyTorch** to 1.x:
+   ```bash
+   pip install torch==1.13.1
+   ```
+
+### Disk Space Issues
+
+If `npm install` fails with `ENOSPC`:
+
+```bash
+# Clean npm cache
+npm cache clean --force
+
+# Use minimal install
+npm install --prefer-offline --no-audit
+```
+
+## Tech Stack
+
+| Component | Technology |
+|-----------|------------|
+| ML Training | PyTorch, Hydra, WandB |
+| Model Export | ONNX, TorchScript |
+| Web Frontend | Next.js 14, React, TypeScript |
+| Browser Inference | ONNX Runtime Web (WASM) |
+| State Management | Zustand |
+| Visualization | react-globe.gl, Recharts |
+| Styling | Tailwind CSS |
+| Python Dashboard | Streamlit |
+
 ## References
 
 - [NASA Telemanom](https://github.com/khundman/telemanom)
 - [Detecting Spacecraft Anomalies Using LSTMs](https://arxiv.org/abs/1802.04431)
 - [Hydra Documentation](https://hydra.cc/)
 - [Weights & Biases](https://wandb.ai/)
+- [ONNX Runtime Web](https://onnxruntime.ai/docs/tutorials/web/)
+- [Next.js Documentation](https://nextjs.org/docs)

@@ -1,0 +1,536 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* =============================================================================
+   TINY-SAT-ANOMALY v2.0 - Elite Glassmorphism HUD Design System
+   Inspired by SpaceX Dragon Interface & The Expanse
+   ============================================================================= */
+
+/* -----------------------------------------------------------------------------
+   Design Tokens / CSS Variables
+   ----------------------------------------------------------------------------- */
+:root {
+  /* Core Palette */
+  --void-black: #050505;
+  --space-black: #0a0a0a;
+  --panel-dark: #0d1117;
+  --panel-light: #161b22;
+
+  /* Signal Colors */
+  --signal-white: #f0f0f0;
+  --signal-grey: #8b949e;
+  --signal-dim: #484f58;
+
+  /* Status Colors */
+  --alert-red: #ff3b30;
+  --nominal-green: #34c759;
+  --warning-amber: #ff9f0a;
+  --info-cyan: #32ade6;
+
+  /* Accent Colors */
+  --accent-cyan: #00d4ff;
+  --accent-blue: #58a6ff;
+  --accent-purple: #a371f7;
+
+  /* Glass Properties */
+  --glass-blur: 12px;
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-highlight: rgba(255, 255, 255, 0.05);
+  --glass-shadow: rgba(0, 0, 0, 0.5);
+
+  /* Glow Effects */
+  --glow-cyan: 0 0 20px rgba(0, 212, 255, 0.4);
+  --glow-green: 0 0 20px rgba(52, 199, 89, 0.4);
+  --glow-red: 0 0 30px rgba(255, 59, 48, 0.5);
+}
+
+/* -----------------------------------------------------------------------------
+   Typography - JetBrains Mono for data, Inter for UI
+   ----------------------------------------------------------------------------- */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Share+Tech+Mono&display=swap');
+
+/* -----------------------------------------------------------------------------
+   Base Styles
+   ----------------------------------------------------------------------------- */
+html,
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--void-black);
+  color: var(--signal-white);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+/* Monospace for all data displays */
+.font-data,
+.font-mono {
+  font-family: 'JetBrains Mono', 'Share Tech Mono', monospace;
+}
+
+/* -----------------------------------------------------------------------------
+   Scrollbar - Minimal & Dark
+   ----------------------------------------------------------------------------- */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--signal-dim);
+  border-radius: 2px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--signal-grey);
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--signal-dim) transparent;
+}
+
+/* -----------------------------------------------------------------------------
+   Glassmorphism Components
+   ----------------------------------------------------------------------------- */
+@layer components {
+  /* Base Glass Panel */
+  .glass-panel {
+    background: rgba(13, 17, 23, 0.7);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    box-shadow:
+      0 8px 32px var(--glass-shadow),
+      inset 0 1px 0 var(--glass-highlight);
+  }
+
+  /* Glass Panel with Cyan Accent */
+  .glass-panel-accent {
+    @apply glass-panel;
+    border-top: 1px solid rgba(0, 212, 255, 0.3);
+    box-shadow:
+      0 8px 32px var(--glass-shadow),
+      inset 0 1px 0 rgba(0, 212, 255, 0.1),
+      0 0 40px rgba(0, 212, 255, 0.05);
+  }
+
+  /* Glass Panel with Inner Glow */
+  .glass-panel-glow {
+    @apply glass-panel;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .glass-panel-glow::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      var(--accent-cyan) 50%,
+      transparent 100%
+    );
+    opacity: 0.5;
+  }
+
+  /* HUD Frame - Corner Brackets */
+  .hud-frame {
+    position: relative;
+  }
+
+  .hud-frame::before,
+  .hud-frame::after {
+    content: '';
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border-color: var(--accent-cyan);
+    border-style: solid;
+    opacity: 0.6;
+  }
+
+  .hud-frame::before {
+    top: 0;
+    left: 0;
+    border-width: 2px 0 0 2px;
+  }
+
+  .hud-frame::after {
+    bottom: 0;
+    right: 0;
+    border-width: 0 2px 2px 0;
+  }
+
+  /* Status Badge - Nominal */
+  .status-nominal {
+    background: linear-gradient(135deg, rgba(52, 199, 89, 0.1) 0%, rgba(52, 199, 89, 0.05) 100%);
+    border: 1px solid rgba(52, 199, 89, 0.4);
+    box-shadow: var(--glow-green);
+    animation: pulseGreen 3s ease-in-out infinite;
+  }
+
+  /* Status Badge - Critical */
+  .status-critical {
+    background: linear-gradient(135deg, rgba(255, 59, 48, 0.15) 0%, rgba(255, 59, 48, 0.05) 100%);
+    border: 1px solid rgba(255, 59, 48, 0.5);
+    box-shadow: var(--glow-red);
+    animation: pulseRed 0.5s ease-in-out infinite alternate;
+  }
+
+  /* Status Badge - Warning */
+  .status-warning {
+    background: linear-gradient(135deg, rgba(255, 159, 10, 0.1) 0%, rgba(255, 159, 10, 0.05) 100%);
+    border: 1px solid rgba(255, 159, 10, 0.4);
+    box-shadow: 0 0 20px rgba(255, 159, 10, 0.3);
+  }
+
+  /* Metric Card */
+  .metric-card {
+    @apply glass-panel;
+    padding: 16px;
+    position: relative;
+  }
+
+  .metric-card .value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.75rem;
+    font-weight: 600;
+    color: var(--accent-cyan);
+    text-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
+    line-height: 1;
+  }
+
+  .metric-card .label {
+    font-size: 0.625rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--signal-grey);
+    margin-top: 8px;
+  }
+
+  .metric-card .icon {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    color: var(--signal-dim);
+    opacity: 0.5;
+  }
+
+  /* Danger Metric Variant */
+  .metric-card.danger .value {
+    color: var(--alert-red);
+    text-shadow: 0 0 20px rgba(255, 59, 48, 0.5);
+  }
+
+  /* Success Metric Variant */
+  .metric-card.success .value {
+    color: var(--nominal-green);
+    text-shadow: 0 0 20px rgba(52, 199, 89, 0.5);
+  }
+
+  /* Terminal Log */
+  .terminal-log {
+    background: rgba(5, 5, 5, 0.9);
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    line-height: 1.6;
+    box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.8);
+  }
+
+  .terminal-log .entry {
+    padding: 4px 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    display: flex;
+    gap: 12px;
+  }
+
+  .terminal-log .timestamp {
+    color: var(--signal-dim);
+    flex-shrink: 0;
+  }
+
+  .terminal-log .level-info { color: var(--info-cyan); }
+  .terminal-log .level-success { color: var(--nominal-green); }
+  .terminal-log .level-warning { color: var(--warning-amber); }
+  .terminal-log .level-error {
+    color: var(--alert-red);
+    text-shadow: 0 0 8px rgba(255, 59, 48, 0.5);
+  }
+
+  /* Oscilloscope / Chart Container */
+  .oscilloscope {
+    @apply glass-panel;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .oscilloscope::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(90deg, rgba(0, 212, 255, 0.03) 1px, transparent 1px),
+      linear-gradient(rgba(0, 212, 255, 0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+  }
+
+  .oscilloscope .trace {
+    filter: drop-shadow(0 0 8px rgba(0, 212, 255, 0.6));
+  }
+
+  .oscilloscope .trace.alert {
+    filter: drop-shadow(0 0 12px rgba(255, 59, 48, 0.8));
+  }
+
+  /* Button - Primary */
+  .btn-primary {
+    background: linear-gradient(135deg, rgba(0, 212, 255, 0.2) 0%, rgba(0, 212, 255, 0.1) 100%);
+    border: 1px solid rgba(0, 212, 255, 0.4);
+    color: var(--accent-cyan);
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    padding: 10px 20px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+
+  .btn-primary:hover {
+    background: linear-gradient(135deg, rgba(0, 212, 255, 0.3) 0%, rgba(0, 212, 255, 0.15) 100%);
+    box-shadow: var(--glow-cyan);
+    transform: translateY(-1px);
+  }
+
+  .btn-primary:active {
+    transform: translateY(0);
+  }
+
+  /* Button - Danger */
+  .btn-danger {
+    background: linear-gradient(135deg, rgba(255, 59, 48, 0.2) 0%, rgba(255, 59, 48, 0.1) 100%);
+    border: 1px solid rgba(255, 59, 48, 0.4);
+    color: var(--alert-red);
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    padding: 10px 20px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+
+  .btn-danger:hover {
+    background: linear-gradient(135deg, rgba(255, 59, 48, 0.3) 0%, rgba(255, 59, 48, 0.15) 100%);
+    box-shadow: var(--glow-red);
+  }
+
+  /* Button - Success */
+  .btn-success {
+    background: linear-gradient(135deg, rgba(52, 199, 89, 0.2) 0%, rgba(52, 199, 89, 0.1) 100%);
+    border: 1px solid rgba(52, 199, 89, 0.4);
+    color: var(--nominal-green);
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    padding: 10px 20px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+
+  .btn-success:hover {
+    background: linear-gradient(135deg, rgba(52, 199, 89, 0.3) 0%, rgba(52, 199, 89, 0.15) 100%);
+    box-shadow: var(--glow-green);
+  }
+
+  /* Skeleton Loading */
+  .skeleton {
+    background: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.03) 0%,
+      rgba(255, 255, 255, 0.08) 50%,
+      rgba(255, 255, 255, 0.03) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 4px;
+  }
+
+  /* Progress Bar */
+  .progress-bar {
+    height: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .progress-bar .fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent-cyan), var(--nominal-green));
+    box-shadow: 0 0 10px var(--accent-cyan);
+    transition: width 0.3s ease;
+  }
+
+  .progress-bar .fill.danger {
+    background: linear-gradient(90deg, var(--warning-amber), var(--alert-red));
+    box-shadow: 0 0 10px var(--alert-red);
+  }
+
+  /* Divider with glow */
+  .divider-glow {
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      var(--accent-cyan) 50%,
+      transparent 100%
+    );
+    opacity: 0.3;
+  }
+}
+
+/* -----------------------------------------------------------------------------
+   Animations
+   ----------------------------------------------------------------------------- */
+@keyframes pulseGreen {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(52, 199, 89, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(52, 199, 89, 0.5);
+  }
+}
+
+@keyframes pulseRed {
+  0% {
+    box-shadow: 0 0 20px rgba(255, 59, 48, 0.4);
+  }
+  100% {
+    box-shadow: 0 0 50px rgba(255, 59, 48, 0.7);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes scanline {
+  0% {
+    transform: translateY(-100%);
+  }
+  100% {
+    transform: translateY(100%);
+  }
+}
+
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+/* Scanline Effect Overlay */
+.scanline-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent 0px,
+    transparent 2px,
+    rgba(0, 0, 0, 0.1) 2px,
+    rgba(0, 0, 0, 0.1) 4px
+  );
+  opacity: 0.15;
+}
+
+/* CRT Flicker (subtle) */
+.crt-flicker {
+  animation: flicker 0.15s infinite;
+}
+
+@keyframes flicker {
+  0% { opacity: 0.97; }
+  50% { opacity: 1; }
+  100% { opacity: 0.98; }
+}
+
+/* -----------------------------------------------------------------------------
+   Recharts Customization
+   ----------------------------------------------------------------------------- */
+.recharts-cartesian-grid-horizontal line,
+.recharts-cartesian-grid-vertical line {
+  stroke: rgba(0, 212, 255, 0.1) !important;
+}
+
+.recharts-text {
+  fill: var(--signal-grey) !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 10px !important;
+}
+
+.recharts-tooltip-wrapper {
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.5));
+}
+
+.recharts-default-tooltip {
+  background: rgba(13, 17, 23, 0.95) !important;
+  border: 1px solid rgba(0, 212, 255, 0.3) !important;
+  border-radius: 8px !important;
+  font-family: 'JetBrains Mono', monospace !important;
+}
+
+/* -----------------------------------------------------------------------------
+   Utility Classes
+   ----------------------------------------------------------------------------- */
+.text-glow-cyan {
+  text-shadow: 0 0 20px rgba(0, 212, 255, 0.6);
+}
+
+.text-glow-green {
+  text-shadow: 0 0 20px rgba(52, 199, 89, 0.6);
+}
+
+.text-glow-red {
+  text-shadow: 0 0 20px rgba(255, 59, 48, 0.6);
+}
+
+.border-glow-cyan {
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+}
+
+.border-glow-green {
+  box-shadow: 0 0 20px rgba(52, 199, 89, 0.3);
+}
+
+.border-glow-red {
+  box-shadow: 0 0 20px rgba(255, 59, 48, 0.3);
+}

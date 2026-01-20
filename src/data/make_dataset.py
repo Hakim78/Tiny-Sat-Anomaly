@@ -17,8 +17,9 @@ from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import torch
+from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
-from torch.utils.data import DataLoader, Dataset, random_split
+from torch.utils.data import DataLoader, Dataset
 
 logger = logging.getLogger(__name__)
 
@@ -374,15 +375,22 @@ def get_data_loaders(
     seed: int = 42
 ) -> Dict[str, DataLoader]:
     """
-    Create PyTorch DataLoaders for training, validation, and testing.
+    Create PyTorch DataLoaders with STRATIFIED splitting.
+
+    IMPORTANT: This function MERGES train and test sequences, then performs
+    a stratified split to ensure anomalies are present in ALL splits.
+    This fixes the "Cold Start" problem where original Telemanom has
+    0 anomalies in training data.
+
+    Split ratios: 70% Train, 15% Val, 15% Test
 
     Args:
-        train_sequences: Training sequences array
-        train_labels: Training labels array
-        test_sequences: Test sequences array
-        test_labels: Test labels array
+        train_sequences: Original training sequences array
+        train_labels: Original training labels array
+        test_sequences: Original test sequences array
+        test_labels: Original test labels array
         batch_size: Batch size for all loaders
-        val_ratio: Proportion of training data for validation
+        val_ratio: (ignored - using fixed 70/15/15 split)
         num_workers: Number of data loading workers
         pin_memory: Pin memory for faster GPU transfer
         seed: Random seed for reproducible splitting
@@ -390,26 +398,75 @@ def get_data_loaders(
     Returns:
         Dictionary with 'train', 'val', and 'test' DataLoaders
     """
-    # Create datasets
-    full_train_dataset = TelemetryDataset(train_sequences, train_labels)
-    test_dataset = TelemetryDataset(test_sequences, test_labels)
+    # =========================================================================
+    # MERGE all data to fix Cold Start problem
+    # =========================================================================
+    logger.info("=" * 50)
+    logger.info("STRATIFIED SPLIT: Merging train + test sequences")
+    logger.info("=" * 50)
 
-    # Split training into train/val
-    val_size = int(len(full_train_dataset) * val_ratio)
-    train_size = len(full_train_dataset) - val_size
+    # Concatenate all sequences and labels
+    all_sequences = np.concatenate([train_sequences, test_sequences], axis=0)
+    all_labels = np.concatenate([train_labels, test_labels], axis=0)
 
-    generator = torch.Generator().manual_seed(seed)
-    train_dataset, val_dataset = random_split(
-        full_train_dataset,
-        [train_size, val_size],
-        generator=generator
+    total_samples = len(all_labels)
+    total_anomalies = np.sum(all_labels == 1)
+    total_normal = np.sum(all_labels == 0)
+
+    logger.info(f"Total merged data: {total_samples} samples")
+    logger.info(f"  - Normal: {total_normal}")
+    logger.info(f"  - Anomaly: {total_anomalies}")
+    logger.info(f"  - Anomaly ratio: {total_anomalies/total_samples*100:.2f}%")
+
+    # =========================================================================
+    # STRATIFIED SPLIT: 70% Train, 15% Val, 15% Test
+    # =========================================================================
+    # First split: 70% train, 30% temp (val + test)
+    X_train, X_temp, y_train, y_temp = train_test_split(
+        all_sequences,
+        all_labels,
+        test_size=0.30,
+        random_state=seed,
+        stratify=all_labels  # CRITICAL: Ensures anomaly distribution
     )
 
-    logger.info(
-        f"Dataset split: Train={train_size}, Val={val_size}, Test={len(test_dataset)}"
+    # Second split: 50% of temp = 15% val, 50% of temp = 15% test
+    X_val, X_test, y_val, y_test = train_test_split(
+        X_temp,
+        y_temp,
+        test_size=0.50,
+        random_state=seed,
+        stratify=y_temp  # CRITICAL: Ensures anomaly distribution
     )
 
-    # Create DataLoaders
+    # =========================================================================
+    # LOG ANOMALY DISTRIBUTION (Critical for debugging)
+    # =========================================================================
+    train_anomalies = np.sum(y_train == 1)
+    val_anomalies = np.sum(y_val == 1)
+    test_anomalies = np.sum(y_test == 1)
+
+    logger.info("-" * 50)
+    logger.info("STRATIFIED SPLIT RESULT:")
+    logger.info(f"  Train: {len(y_train)} samples (Normal={np.sum(y_train==0)}, Anomaly={train_anomalies})")
+    logger.info(f"  Val:   {len(y_val)} samples (Normal={np.sum(y_val==0)}, Anomaly={val_anomalies})")
+    logger.info(f"  Test:  {len(y_test)} samples (Normal={np.sum(y_test==0)}, Anomaly={test_anomalies})")
+    logger.info("-" * 50)
+
+    # Verify anomalies are in training set
+    if train_anomalies == 0:
+        logger.error("CRITICAL: Still 0 anomalies in training set after stratified split!")
+        logger.error("Check if your dataset has enough anomalies for stratification.")
+    else:
+        logger.info(f"SUCCESS: {train_anomalies} anomalies in training set!")
+
+    # =========================================================================
+    # CREATE DATASETS AND DATALOADERS
+    # =========================================================================
+    train_dataset = TelemetryDataset(X_train, y_train)
+    val_dataset = TelemetryDataset(X_val, y_val)
+    test_dataset = TelemetryDataset(X_test, y_test)
+
     loaders = {
         "train": DataLoader(
             train_dataset,
